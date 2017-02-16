@@ -5,11 +5,10 @@ import java.net.Socket;
  * Created by 14borisova on 10.02.2017.
  */
 public class Client {
-    private static int portNum = Const.port;
-    private  static String host = "localhost";
-    public static void main(String[] args) {
+    public static void main(String[] args) { // в аргументах: сначала номер порта, потом имя хоста
         try {
-            Socket socket = new Socket(host, portNum); // по локальному хосту подключаемся к тому порту, что указывали на сервере
+            int portNum = Integer.parseInt(args[0]);
+            Socket socket = new Socket(args[1], portNum); // по локальному хосту подключаемся к тому порту, что указывали на сервере
             DataOutputStream dOutputStream = new DataOutputStream(socket.getOutputStream());
             dOutputStream.writeUTF("Hi! Your port is " + portNum);
             System.out.println("The connection was created.");

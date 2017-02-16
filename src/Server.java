@@ -6,9 +6,10 @@ import java.net.Socket;
  * Created by 14borisova on 10.02.2017.
  */
 public class Server {
-    private static int portNum = Const.port; // выбираем в интервале  1 025..65 535; 0 - автоматический выбор свободного порта
-    public static void main(String[] args) {
+    // порт выбираем в интервале  1 025..65 535; 0 - автоматический выбор свободного порта
+    public static void main(String[] args) { // в аргументах: номер порта
         try {
+            int portNum = Integer.parseInt(args[0]);
             ServerSocket serverSocket = new ServerSocket(portNum);
             System.out.println("Server started on " + portNum);
             Socket socket = serverSocket.accept(); // возвращает экземпляр клиента, кот. подключился к серверу
