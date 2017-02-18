@@ -1,5 +1,4 @@
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.net.Socket;
 
 /**
@@ -26,8 +25,12 @@ public class Session implements Runnable {
             _socket.close();
             // увеличиваем счетчик допустимых соединений, так как кто-то завершил работу с сервером
             Server.numOfConn++;
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch(Exception e) {
+            if (e.getMessage().equals("Connection reset")){
+                Server.numOfConn++;
+                System.err.println("Connection was reset by Client (" + _name + "). Bye friend!");
+            }
+            else System.err.println("Session.run() -> Exception : " + e);
         }
     }
 

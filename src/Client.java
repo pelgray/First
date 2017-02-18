@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * Created by 14borisova on 10.02.2017.
@@ -23,9 +24,18 @@ public class Client {
                 String myMsg = "";
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
                 while (!myMsg.equals("exit")) {
-                    myMsg = bufferedReader.readLine();
+                    try{
+                        myMsg = bufferedReader.readLine();
                     dOutputStream.writeUTF(myMsg);
                     System.out.println("Sent");
+                    } catch (Exception e){
+                        if(e.getMessage().contains("Connection reset")){
+                            System.err.println("Server is not connected.");
+                            socket.close();
+                            System.exit(-1);
+                        }
+                        else e.printStackTrace();
+                    }
                 }
                 System.out.println("The connection was stopped.");
             }
@@ -33,7 +43,12 @@ public class Client {
                 System.out.println(fromServer);
             }
             socket.close();
-        } catch (IOException e) {
+        } catch (SocketException e) {
+            if (e.getMessage().equals("Connection refused: connect"))
+                System.err.println("Server is not connected.");
+            else e.printStackTrace();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
