@@ -1,4 +1,5 @@
 import java.io.DataInputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
@@ -7,10 +8,12 @@ import java.net.Socket;
 public class Session implements Runnable {
     Socket _socket;
     String _name; // имя, сложенное из хоста и порта
+    ServerSocket _serverSocket;
 
-    public Session(Socket socket) {
+    public Session(Socket socket, ServerSocket serverSocket) {
         this._socket = socket;
         this._name = socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
+        this._serverSocket = serverSocket;
     }
 
     public void run() {
@@ -23,14 +26,13 @@ public class Session implements Runnable {
             }
             System.out.println("The connection with (" + _name + ") was stopped.");
             _socket.close();
-            // увеличиваем счетчик допустимых соединений, так как кто-то завершил работу с сервером
-            Server.numOfConn++;
         } catch(Exception e) {
-            if (e.getMessage().equals("Connection reset")){
-                Server.numOfConn++;
+            if (!e.getMessage().equals("Connection reset")) System.err.println("Session.run() -> Exception : " + e);
+            else
                 System.err.println("Connection was reset by Client (" + _name + "). Bye friend!");
-            }
-            else System.err.println("Session.run() -> Exception : " + e);
+        } finally{
+            // уменьшаем счетчик допустимых соединений, так как кто-то завершил работу с сервером
+            Server.closeSession();
         }
     }
 
