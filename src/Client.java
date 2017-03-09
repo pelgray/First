@@ -7,50 +7,85 @@ import java.net.SocketException;
  */
 public class Client {
     public static void main(String[] args) { // в аргументах: сначала номер порта, потом имя хоста
+        int portNum; // номер порта
         try {
-            // берем порт из аргументов
-            int portNum = Integer.parseInt(args[0]);
-            // по хосту подключаемся к тому порту, что указывали на сервере
-            Socket socket = new Socket(args[1], portNum);
+            portNum = Integer.parseInt(args[0]); // берем порт из аргументов
+        } catch (NumberFormatException e){
+            System.err.println("Client: Wrong port format. Should be integer. Try again.");
+            return;
+        }
 
-            DataOutputStream dOutputStream = new DataOutputStream(socket.getOutputStream());
-            DataInputStream dInputStream = new DataInputStream(socket.getInputStream());
+        // по хосту подключаемся к тому порту, что указывали на сервере
+        Socket socket;
+        try {
+            socket = new Socket(args[1], portNum);
+        } catch (IOException e) {
+            System.err.println("Client: The error of creating a new socket. Please check arguments.");
+            return;
+        }
 
-            // контрольная строка: либо есть сообщение от сервера, что он занят, либо нет. Во втором случае продолжаем работу
-            String fromServer = dInputStream.readUTF();
+        DataOutputStream dOutputStream;
+        try {
+            dOutputStream = new DataOutputStream(socket.getOutputStream());
+        } catch (IOException e) {
+            System.err.println("Client: The error of getting the output stream.");
+            return;
+        }
+        DataInputStream dInputStream;
+        try {
+            dInputStream = new DataInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            System.err.println("Client: The error of getting the input stream.");
+            return;
+        }
 
-            if (fromServer.equals("")) {
-                System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
-                String myMsg = "";
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-                while (!myMsg.equals("exit")) {
-                    try{
-                        myMsg = bufferedReader.readLine();
-                    dOutputStream.writeUTF(myMsg);
-                    System.out.println("Sent");
-                    } catch (Exception e){
-                        if(e.getMessage().contains("Connection reset")){
-                            System.err.println("Server is not connected.");
-                            socket.close();
-                            System.exit(-1);
-                        }
-                        else e.printStackTrace();
+        // контрольная строка: либо есть сообщение от сервера, что он занят, либо нет. Во втором случае продолжаем работу
+        String fromServer;
+        try {
+            fromServer = dInputStream.readUTF();
+        } catch (IOException e) {
+            System.err.println("Client: The error of reading from the input stream.");
+            return;
+        }
+
+        if (fromServer.equals("")) {
+            System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
+            String myMsg = "";
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+            while (!myMsg.equals("exit")) {
+                try {
+                    myMsg = bufferedReader.readLine();
+                } catch (IOException e) {
+                    if(e.getMessage().contains("Connection reset")){
+                        System.err.println("Server is not connected.");
                     }
+                    else {
+                        System.err.println("Client: The error of reading from the system input stream.");
+                    }
+                    return;
                 }
-                System.out.println("The connection was stopped.");
+                try{
+                    dOutputStream.writeUTF(myMsg);
+                } catch (IOException e){
+                    if(e.getMessage().contains("Connection reset")){
+                        System.err.println("Server is not connected.");
+                    }
+                    else{
+                        System.err.println("Client: The error of writing in the output stream.");
+                    }
+                    return;
+                }
+                System.out.println("Sent");
             }
-            else{ // выводим сообщение от сервера, что он не хочет работать с нами
-                System.out.println(fromServer);
-            }
+            System.out.println("The connection was stopped.");
+        }
+        else{ // выводим сообщение от сервера, что он не хочет работать с нами
+            System.out.println(fromServer);
+        }
+        try {
             socket.close();
-        } catch (SocketException e) {
-            if (e.getMessage().equals("Connection refused: connect"))
-                System.err.println("Server is not connected.");
-            else e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("Client: The error of closing socket.");
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 }

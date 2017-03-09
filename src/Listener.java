@@ -15,19 +15,21 @@ public class Listener implements Runnable{
             try {
                 command = bufferedReader.readLine();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("Listener: The error of reading from the system input stream.");
+                System.exit(-1);
             }
             switch(command) {
                 case "how many":
-                    System.out.println(Server.numOfConn);
+                    System.out.println(Server.getNumOfConn());
                     break;
                 case "maxconn":
-                    System.out.println(Server.maxNumOfConn);
+                    System.out.println(Server.getMaxNumOfConn());
                     break;
                 case "help":
-                    System.out.println("    'how many' - number of connections at the moment\n    'maxconn' - maximum number of connections allowed");
+                    System.out.println("    'how many' - number of connections at the moment\n    'maxconn' - maximum number of connections");
                     break;
                 default:
+                    System.err.println("Listener:   Wrong command. Please use command 'help'.");
                     break;
             }
         }
