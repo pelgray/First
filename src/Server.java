@@ -9,13 +9,12 @@ public class Server {
     private static int numOfConn = 0; // счетчик количества подключений
     private static int maxNumOfConn;
     private static Thread listener;
-    public static void closeSession(Socket socket){
-        try {
-            socket.close();
-        } catch (IOException e) {
-            System.err.println("closeSession(): The error of closing socket.");
+
+    private static final Object lock = new Object();
+    public static void closeSession(){
+        synchronized (lock) {
+            numOfConn--;
         }
-        numOfConn--;
     }
     public static int getMaxNumOfConn() { return maxNumOfConn; }
     public static int getNumOfConn() { return numOfConn; }
@@ -86,7 +85,9 @@ public class Server {
                 }
                 System.out.println("[NEW]   The connection with (" + client.getName() + ") was created.");
                 // увеличиваем количество возможных соединений
-                numOfConn++;
+                synchronized (lock) {
+                    numOfConn++;
+                }
             }
             else { // когда максимальное количество подключений достигнуто
                 try {

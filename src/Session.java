@@ -39,21 +39,16 @@ public class Session implements Runnable {
                 System.out.println("        msg from (" + _name + "): " + clientMsg);
             }
             System.out.println("The connection with (" + _name + ") was stopped.");
-
         }
-        /*catch(SocketException e) {
-            if (!e.getMessage().equals("Connection reset")) System.err.println("Session.run() -> Exception : " + e);
-            else
-                System.err.println("Connection was reset by Client (" + _name + "). Bye friend!");}*/
         finally{
             // уменьшаем счетчик допустимых соединений, так как кто-то завершил работу с сервером
-            Server.closeSession(_socket);
+            Server.closeSession();
+            try {
+                _socket.close();
+            } catch (IOException e) {
+                System.err.println("closeSession(): The error of closing socket.");
+            }
         }
-
-        /* } catch(Exception e) {
-            if (!e.getMessage().equals("Connection reset")) System.err.println("Session.run() -> Exception : " + e);
-            else
-                System.err.println("Connection was reset by Client (" + _name + "). Bye friend!");*/
     }
 
 }
