@@ -5,17 +5,22 @@ import java.net.Socket;
 /**
  * Created by 14borisova on 10.02.2017.
  */
+
 public class Server {
     private static int numOfConn = 0; // счетчик количества подключений
     private static int maxNumOfConn;
     private static Thread listener;
+    public static final Thread server = Thread.currentThread();
 
     private static final Object lock = new Object();
+
     public static void closeSession(){
         synchronized (lock) {
             numOfConn--;
+            lock.notify();
         }
     }
+
     public static int getMaxNumOfConn() { return maxNumOfConn; }
     public static int getNumOfConn() { return numOfConn; }
 
@@ -49,8 +54,10 @@ public class Server {
         listener.setDaemon(true);
         listener.start();
 
+        mainCycle:
         while (true) {
-            Socket socket; // принимаем входящее подключение
+            Socket socket;
+            // принимаем входящее подключение
             try {
                 socket = serverSocket.accept();
             } catch (IOException e) {
@@ -73,35 +80,29 @@ public class Server {
                 // обзываем поток
                 client.setName(socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort()));
 
-                // запускаем
-                client.start();
-
                 // чисто для проверки в клиенте: хотят ли с нами работать или нет (здесь: хотят работать)
                 try {
                     dOutputStream.writeUTF("");
                 } catch (IOException e) {
-                    System.err.println("Server: The error of writing in the output stream.");
-                    return;
+                    System.err.println("The connection with waiting Client (" + client.getName() + ") was lost.");
+                    continue mainCycle;
                 }
+
+                // запускаем
+                client.start();
                 System.out.println("[NEW]   The connection with (" + client.getName() + ") was created.");
+
                 // увеличиваем количество возможных соединений
                 synchronized (lock) {
                     numOfConn++;
-                }
-            }
-            else { // когда максимальное количество подключений достигнуто
-                try {
-                    dOutputStream.writeUTF("Hi! Sorry, I'm busy now. Please try later.");
-                } catch (IOException e) {
-                    System.err.println("Server: The error of writing in the output stream.");
-                    return;
-                }
-                System.out.println("    [INFO]  The connection with a new client was rejected.");
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    System.err.println("Server: The error of closing socket.");
-                    return;
+                    if (numOfConn == maxNumOfConn){
+                        try {
+                            lock.wait();
+                        } catch (InterruptedException e) {
+                            System.err.println("Server: The error of waiting the object.");
+                            return;
+                        }
+                    }
                 }
             }
         }

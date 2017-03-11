@@ -25,8 +25,11 @@ public class Listener implements Runnable{
                 case "maxconn":
                     System.out.println(Server.getMaxNumOfConn());
                     break;
+                case "state":
+                    System.out.println(Server.server.getState());
+                    break;
                 case "help":
-                    System.out.println("    'how many' - number of connections at the moment\n    'maxconn' - maximum number of connections");
+                    System.out.println("    'how many' - number of connections at the moment\n    'maxconn' - maximum number of connections\n    'state' - current state of Server");
                     break;
                 default:
                     System.err.println("Listener:   Wrong command. Please use command 'help'.");

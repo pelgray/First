@@ -33,7 +33,7 @@ public class Session implements Runnable {
                     if (!e.getMessage().equals("Connection reset"))
                         System.err.println("Session: The error of reading from the input stream.");
                     else
-                        System.err.println("Connection was reset by Client (" + _name + "). Bye friend!");
+                        System.err.println("The connection was reset by Client (" + _name + "). Bye friend!");
                     return;
                 }
                 System.out.println("        msg from (" + _name + "): " + clientMsg);

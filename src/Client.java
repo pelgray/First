@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketException;
 
 /**
  * Created by 14borisova on 10.02.2017.
@@ -39,6 +38,8 @@ public class Client {
             return;
         }
 
+        System.out.println("Please wait. Connecting to the Server...");
+
         // контрольная строка: либо есть сообщение от сервера, что он занят, либо нет. Во втором случае продолжаем работу
         String fromServer;
         try {
@@ -47,7 +48,6 @@ public class Client {
             System.err.println("Client: The error of reading from the input stream.");
             return;
         }
-
         if (fromServer.equals("")) {
             System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
             String myMsg = "";
@@ -56,21 +56,19 @@ public class Client {
                 try {
                     myMsg = bufferedReader.readLine();
                 } catch (IOException e) {
-                    if(e.getMessage().contains("Connection reset")){
+                    if (e.getMessage().contains("Connection reset")) {
                         System.err.println("Server is not connected.");
-                    }
-                    else {
+                    } else {
                         System.err.println("Client: The error of reading from the system input stream.");
                     }
                     return;
                 }
-                try{
+                try {
                     dOutputStream.writeUTF(myMsg);
-                } catch (IOException e){
-                    if(e.getMessage().contains("Connection reset")){
+                } catch (IOException e) {
+                    if (e.getMessage().contains("Connection reset")) {
                         System.err.println("Server is not connected.");
-                    }
-                    else{
+                    } else {
                         System.err.println("Client: The error of writing in the output stream.");
                     }
                     return;
