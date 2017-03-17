@@ -1,4 +1,5 @@
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,8 +17,27 @@ public class Session implements Runnable {
         this._name = socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
     }
 
+    public String getName(){    return _name;   }
+
     public void run() {
         try {
+            DataOutputStream dOutputStream;
+            try {
+                dOutputStream = new DataOutputStream(_socket.getOutputStream());
+            } catch (IOException e) {
+                System.err.println("Server: The error of getting the output stream.");
+                return;
+            }
+            // чисто для проверки в клиенте: хотят ли с нами работать или нет (здесь: хотят работать)
+            try {
+                dOutputStream.writeUTF("");
+            } catch (IOException e) {
+                System.err.println("The connection with waiting Client (" + _name + ") was lost.");
+                return;
+            }
+
+            System.out.println("[NEW]   The connection with (" + _name + ") was created.");
+
             String clientMsg = "";
             DataInputStream dInputStream;
             try {
@@ -46,7 +66,7 @@ public class Session implements Runnable {
             try {
                 _socket.close();
             } catch (IOException e) {
-                System.err.println("closeSession(): The error of closing socket.");
+                System.err.println("Session: The error of closing socket.");
             }
         }
     }

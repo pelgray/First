@@ -45,9 +45,10 @@ public class Client {
         try {
             fromServer = dInputStream.readUTF();
         } catch (IOException e) {
-            System.err.println("Client: The error of reading from the input stream.");
+            System.err.println("Client: The error of reading from the input stream. The Server maybe is not connected.");
             return;
         }
+
         if (fromServer.equals("")) {
             System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
             String myMsg = "";
@@ -79,11 +80,6 @@ public class Client {
         }
         else{ // выводим сообщение от сервера, что он не хочет работать с нами
             System.out.println(fromServer);
-        }
-        try {
-            socket.close();
-        } catch (IOException e) {
-            System.err.println("Client: The error of closing socket.");
         }
     }
 }
