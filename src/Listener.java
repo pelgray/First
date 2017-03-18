@@ -7,10 +7,12 @@ import java.io.InputStreamReader;
  */
 public class Listener implements Runnable{
     private Channel<Runnable> _channel;
-    private Thread _server;
-    public Listener (Channel<Runnable> ch, Thread serv){
+    private Thread _serverThread;
+    private Server _server;
+    public Listener (Channel<Runnable> ch, Thread serv, Server server){
         _channel = ch;
-        _server = serv;
+        _serverThread = serv;
+        _server = server;
     }
     public void run() {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
@@ -25,14 +27,14 @@ public class Listener implements Runnable{
             switch(command) {
                 case "count":
                     String ans = "";
-                    if (Server.getNumOfConn() == Server.getMaxNumOfConn()) ans = " (max)";
-                    System.out.println(Server.getNumOfConn() + ans);
+                    if (_server.get_numOfConn() == _server.get_maxNumOfConn()) ans = " (max)";
+                    System.out.println(_server.get_numOfConn() + ans);
                     break;
                 case "maxconn":
-                    System.out.println(Server.getMaxNumOfConn());
+                    System.out.println(_server.get_maxNumOfConn());
                     break;
                 case "state":
-                    System.out.println(_server.getState());
+                    System.out.println(_serverThread.getState());
                     break;
                 case "queue":
                     System.out.println(_channel.getSizeOfQueue());

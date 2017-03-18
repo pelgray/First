@@ -9,10 +9,12 @@ import java.net.SocketException;
  * Created by 1 on 17.02.2017.
  */
 public class Session implements Runnable {
+    private Server _server;
     private Socket _socket;
     private String _name; // имя, сложенное из хоста и порта
 
-    public Session(Socket socket) {
+    public Session(Socket socket, Server server) {
+        _server = server;
         this._socket = socket;
         this._name = socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
     }
@@ -62,7 +64,7 @@ public class Session implements Runnable {
         }
         finally{
             // уменьшаем счетчик допустимых соединений, так как кто-то завершил работу с сервером
-            Server.closeSession();
+            _server.closeSession();
             try {
                 _socket.close();
             } catch (IOException e) {

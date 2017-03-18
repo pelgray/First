@@ -3,7 +3,7 @@ import java.util.LinkedList;
 /**
  * Created by 1 on 17.03.2017.
  */
-public class Channel<T> { 
+public class Channel<T> {
 
     private final int _maxCount; // максимальное количество сессий, которое мы готовы принять на канал
     private final LinkedList<T> _queue = new LinkedList<>();
