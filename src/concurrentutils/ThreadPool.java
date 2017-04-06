@@ -1,5 +1,7 @@
 package concurrentutils;
 
+import netutils.MessageHandler;
+
 import java.util.LinkedList;
 
 /**
@@ -9,13 +11,15 @@ public class ThreadPool { // создать новый канал
     private final LinkedList<Runnable> _allWorkers = new LinkedList<>(); // база работников
     private final Channel<Runnable> _freeWorkers; // те потоки, кот будут исполнять наши задачи. если свободных нет, ждем (свободные рабочие)
     private final int _maxSize;
+    private final MessageHandler _msgH;
     private final Object _lock = new Object();
 
-    public ThreadPool(int maxSize){
+    public ThreadPool(int maxSize, MessageHandler messageHandler){
         _maxSize = maxSize;
-        _freeWorkers = new Channel<>(_maxSize);
+        _msgH = messageHandler;
+        _freeWorkers = new Channel<>(_maxSize, messageHandler);
 
-        WorkerThread worker = new WorkerThread(this);
+        WorkerThread worker = new WorkerThread(this, messageHandler);
         _allWorkers.addLast(worker);
         _freeWorkers.put(worker);
     }
@@ -24,7 +28,7 @@ public class ThreadPool { // создать новый канал
         synchronized (_lock) {
             if (_freeWorkers.getSize() == 0) {
                 if (_allWorkers.size() < _maxSize) {
-                    WorkerThread worker = new WorkerThread(this);
+                    WorkerThread worker = new WorkerThread(this, _msgH);
                     _allWorkers.addLast(worker);
                     _freeWorkers.put(worker);
                 }

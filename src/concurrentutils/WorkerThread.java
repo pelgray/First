@@ -1,5 +1,7 @@
 package concurrentutils;
 
+import netutils.MessageHandler;
+
 /**
  * Created by 1 on 24.03.2017.
  */
@@ -7,11 +9,13 @@ public class WorkerThread implements Runnable {
     private final Thread _thread;
     private final ThreadPool _threadPool;
     private Runnable _currentTask = null;
+    private MessageHandler _msgH;
 
     private final Object _lock = new Object();
 
-    public WorkerThread(ThreadPool pool){
+    public WorkerThread(ThreadPool pool, MessageHandler messageHandler){
         _threadPool = pool;
+        _msgH = messageHandler;
         _thread = new Thread(this);
         _thread.start();
     }
@@ -32,13 +36,13 @@ public class WorkerThread implements Runnable {
                     try {
                         _lock.wait();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        _msgH.handleError("The error of waiting.");
                     }
                 }
                 try { // если пришла задача
                     _currentTask.run();
                 }catch(RuntimeException e){
-                    e.printStackTrace();
+                    _msgH.handleError("The error of running a new task.");
                 }
                 finally {
                     // в конце

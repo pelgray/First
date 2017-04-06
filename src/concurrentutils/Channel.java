@@ -1,5 +1,7 @@
 package concurrentutils;
 
+import netutils.MessageHandler;
+
 import java.util.LinkedList;
 
 /**
@@ -11,10 +13,12 @@ public class Channel<T> {// здесь очередь незапущенных �
 
     private final int _maxCount; // максимальное количество сессий, которое мы готовы принять на канал
     private final LinkedList<T> _queue = new LinkedList<>();
+    private MessageHandler _msgH;
 
     private final Object _lock = new Object();
 
-    public Channel(int maxCount) {
+    public Channel(int maxCount, MessageHandler messageHandler) {
+        _msgH = messageHandler;
         _maxCount = maxCount;
     }
 
@@ -30,7 +34,7 @@ public class Channel<T> {// здесь очередь незапущенных �
                 try {
                     _lock.wait();
                 } catch (InterruptedException e) {
-                    System.err.println("Channel: The error of waiting in 'put'-condition.");
+                    _msgH.handleError("The error of waiting in 'put'-condition.");
                 }
             }
             _queue.addLast(x);
@@ -43,11 +47,11 @@ public class Channel<T> {// здесь очередь незапущенных �
                 try {
                     _lock.wait();
                 } catch (InterruptedException e) {
-                    System.err.println("Channel: The error of waiting in 'take'-condition.");
+                    _msgH.handleError("The error of waiting in 'take'-condition.");
                 }
             }
             _lock.notifyAll();
-            return (T)_queue.removeFirst();
+            return _queue.removeFirst();
         }
     }
 

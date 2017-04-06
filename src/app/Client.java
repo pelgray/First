@@ -22,7 +22,7 @@ public class Client {
 
             socket = new Socket(args[1], portNum);
         } catch (IOException e) {
-            System.err.println("app.Client: The error of creating a new socket. Please check arguments. PortNum = "+portNum+"; Host = "+args[1]);
+            System.err.println("app.Client: The error of creating a new socket. Please check arguments. PortNum = " + portNum + "; Host = " + args[1]);
             e.printStackTrace();
             return;
         }
@@ -42,7 +42,7 @@ public class Client {
             return;
         }
 
-        System.out.println("Please wait. Connecting to the app.Server...");
+        System.out.println("Please wait. Connecting to the Host...");
 
         // контрольная строка: либо есть сообщение от сервера, что он занят, либо нет. Во втором случае продолжаем работу
         String fromServer;
@@ -62,7 +62,7 @@ public class Client {
                     myMsg = bufferedReader.readLine();
                 } catch (IOException e) {
                     if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("app.Server is not connected.");
+                        System.err.println("The Host is not connected.");
                     } else {
                         System.err.println("app.Client: The error of reading from the system input stream.");
                     }
@@ -72,7 +72,7 @@ public class Client {
                     dOutputStream.writeUTF(myMsg);
                 } catch (IOException e) {
                     if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("Host is not connected.");
+                        System.err.println("The Host is not connected.");
                     } else {
                         System.err.println("app.Client: The error of writing in the output stream.");
                     }

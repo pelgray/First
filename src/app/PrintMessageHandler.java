@@ -7,7 +7,18 @@ import netutils.MessageHandler;
  */
 public class PrintMessageHandler implements MessageHandler {
      @Override
-    public void handle(String message) {
-        System.out.println(message);
+    public void handle(String name, String message) {
+        System.out.println("        msg from (" + name + "): " + message);
+    }
+
+    @Override
+    public void handleError(String error) {
+        try {
+            throw new Exception("Who called me?");
+        }
+        catch( Exception e )
+        {
+            System.err.println(e.getStackTrace()[1].getClassName() + ": " + error);
+        }
     }
 }

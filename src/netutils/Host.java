@@ -20,16 +20,16 @@ public class Host implements Runnable{
 
     private final Object _lock = new Object();
 
-    public Host(int portNum, Channel<Runnable> channel, MessageHandlerFactory mHF){
+    public Host(int portNum, Channel<Runnable> channel, MessageHandler mH){
+        _msgH = mH;
         _portNum = portNum;
         try {
             _serverSocket = new ServerSocket(_portNum);
         } catch (IOException e) {
-            System.err.println("Host: The port " + _portNum + " is busy.");
+            _msgH.handleError("The port " + _portNum + " is busy.");
             return;
         }
         _channel = channel;
-        _msgH = mHF.create();
     }
     public void closeSession(){
         synchronized (_lock) {
@@ -43,18 +43,13 @@ public class Host implements Runnable{
     public void run(){
         System.out.println("Host started on port: " + _portNum);
 
-        Thread listener = new Thread(new Listener(_channel, Thread.currentThread(), Host.this));
-        listener.setDaemon(true);
-        listener.setName("LISTENER");
-        listener.start();
-
         while (true) {
             Socket socket;
             // принимаем входящее подключение
             try {
                 socket = _serverSocket.accept();
             } catch (IOException e) {
-                System.err.println("Host: The error of incoming connection.");
+                _msgH.handleError("The error of incoming connection.");
                 return;
             }
             // увеличиваем количество запросов

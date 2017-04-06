@@ -12,12 +12,12 @@ import java.io.InputStreamReader;
  */
 public class Listener implements Runnable{
     private Channel<Runnable> _channel;
-    private Thread _serverThread;
     private Host _host;
-    public Listener (Channel<Runnable> ch, Thread serv, Host host){
+    private int _maxNumOfConn;
+    public Listener (Channel<Runnable> ch, Host host, int maxNumOfConn){
         _channel = ch;
-        _serverThread = serv;
         _host = host;
+        _maxNumOfConn = maxNumOfConn;
     }
     public void run() {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
@@ -26,27 +26,30 @@ public class Listener implements Runnable{
             try {
                 command = bufferedReader.readLine();
             } catch (IOException e) {
-                System.err.println("Listener: The error of reading from the system input stream.");
+                System.err.println("app.Listener: The error of reading from the system input stream.");
                 System.exit(-1);
             }
             switch(command) {
                 case "count":
-                    System.out.println(_host.get_numOfConn());
+                    int num = _host.get_numOfConn();
+                    String ans = "";
+                    if (num > _maxNumOfConn) ans+=", real conn = " + _maxNumOfConn;
+                    if (num == _maxNumOfConn) ans+=" (max real conn)";
+                    System.out.println(num + ans);
                     break;
-                case "state":
-                    System.out.println(_serverThread.getState());
+                case "max":
+                    System.out.println(_maxNumOfConn);
                     break;
                 case "queue":
                     System.out.println(_channel.getSize());
                     break;
                 case "help":
-                    System.out.println("    'count' - number of connections at the moment" +
-                            "\n    'maxconn' - maximum number of connections" +
-                            "\n    'state' - current state of Host" +
+                    System.out.println("    'count' - number of request at the moment" +
+                            "\n    'max' - maximum number of connections" +
                             "\n    'queue' - current size of the channel queue");
                     break;
                 default:
-                    System.err.println("Listener:   Wrong command. Please use command 'help'.");
+                    System.err.println("app.Listener:   Wrong command. Please use command 'help' for find out more.");
                     break;
             }
         }
