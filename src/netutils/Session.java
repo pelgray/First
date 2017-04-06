@@ -1,25 +1,25 @@
+package netutils;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 
 /**
  * Created by 1 on 17.02.2017.
  */
 public class Session implements Runnable {
-    private Server _server;
+    private Host _host;
     private Socket _socket;
     private String _name; // имя, сложенное из хоста и порта
+    private MessageHandler _msgH;
 
-    public Session(Socket socket, Server server) {
-        _server = server;
+    public Session(Socket socket, Host host, MessageHandler msgH) {
+        this._host = host;
         this._socket = socket;
         this._name = socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
+        this._msgH = msgH;
     }
-
-    public String getName(){    return _name;   }
 
     public void run() {
         try {
@@ -27,14 +27,14 @@ public class Session implements Runnable {
             try {
                 dOutputStream = new DataOutputStream(_socket.getOutputStream());
             } catch (IOException e) {
-                System.err.println("Server: The error of getting the output stream.");
+                System.err.println("Session: The error of getting the output stream.");
                 return;
             }
             // чисто для проверки в клиенте: хотят ли с нами работать или нет (здесь: хотят работать)
             try {
                 dOutputStream.writeUTF("");
             } catch (IOException e) {
-                System.err.println("The connection with waiting Client (" + _name + ") was lost.");
+                System.err.println("The connection with waiting app.Client (" + _name + ") was lost.");
                 return;
             }
 
@@ -55,16 +55,16 @@ public class Session implements Runnable {
                     if (!e.getMessage().equals("Connection reset"))
                         System.err.println("Session: The error of reading from the input stream.");
                     else
-                        System.err.println("The connection was reset by Client (" + _name + "). Bye friend!");
+                        System.err.println("The connection was reset by app.Client (" + _name + "). Bye friend!");
                     return;
                 }
-                System.out.println("        msg from (" + _name + "): " + clientMsg);
+                _msgH.handle("        msg from (" + _name + "): " + clientMsg);
             }
             System.out.println("The connection with (" + _name + ") was stopped.");
         }
         finally{
             // уменьшаем счетчик допустимых соединений, так как кто-то завершил работу с сервером
-            _server.closeSession();
+            _host.closeSession();
             try {
                 _socket.close();
             } catch (IOException e) {

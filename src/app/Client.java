@@ -1,3 +1,5 @@
+package app;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -10,16 +12,18 @@ public class Client {
         try {
             portNum = Integer.parseInt(args[0]); // берем порт из аргументов
         } catch (NumberFormatException e){
-            System.err.println("Client: Wrong port format. Should be integer. Try again.");
+            System.err.println("app.Client: Wrong port format. Should be integer. Try again.");
             return;
         }
 
         // по хосту подключаемся к тому порту, что указывали на сервере
         Socket socket;
         try {
+
             socket = new Socket(args[1], portNum);
         } catch (IOException e) {
-            System.err.println("Client: The error of creating a new socket. Please check arguments.");
+            System.err.println("app.Client: The error of creating a new socket. Please check arguments. PortNum = "+portNum+"; Host = "+args[1]);
+            e.printStackTrace();
             return;
         }
 
@@ -27,25 +31,25 @@ public class Client {
         try {
             dOutputStream = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            System.err.println("Client: The error of getting the output stream.");
+            System.err.println("app.Client: The error of getting the output stream.");
             return;
         }
         DataInputStream dInputStream;
         try {
             dInputStream = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
-            System.err.println("Client: The error of getting the input stream.");
+            System.err.println("app.Client: The error of getting the input stream.");
             return;
         }
 
-        System.out.println("Please wait. Connecting to the Server...");
+        System.out.println("Please wait. Connecting to the app.Server...");
 
         // контрольная строка: либо есть сообщение от сервера, что он занят, либо нет. Во втором случае продолжаем работу
         String fromServer;
         try {
             fromServer = dInputStream.readUTF();
         } catch (IOException e) {
-            System.err.println("Client: The error of reading from the input stream. The Server maybe is not connected.");
+            System.err.println("app.Client: The error of reading from the input stream. The server maybe is not connected.");
             return;
         }
 
@@ -58,9 +62,9 @@ public class Client {
                     myMsg = bufferedReader.readLine();
                 } catch (IOException e) {
                     if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("Server is not connected.");
+                        System.err.println("app.Server is not connected.");
                     } else {
-                        System.err.println("Client: The error of reading from the system input stream.");
+                        System.err.println("app.Client: The error of reading from the system input stream.");
                     }
                     return;
                 }
@@ -68,9 +72,9 @@ public class Client {
                     dOutputStream.writeUTF(myMsg);
                 } catch (IOException e) {
                     if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("Server is not connected.");
+                        System.err.println("Host is not connected.");
                     } else {
-                        System.err.println("Client: The error of writing in the output stream.");
+                        System.err.println("app.Client: The error of writing in the output stream.");
                     }
                     return;
                 }

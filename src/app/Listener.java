@@ -1,3 +1,8 @@
+package app;
+
+import concurrentutils.Channel;
+import netutils.Host;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,11 +13,11 @@ import java.io.InputStreamReader;
 public class Listener implements Runnable{
     private Channel<Runnable> _channel;
     private Thread _serverThread;
-    private Server _server;
-    public Listener (Channel<Runnable> ch, Thread serv, Server server){
+    private Host _host;
+    public Listener (Channel<Runnable> ch, Thread serv, Host host){
         _channel = ch;
         _serverThread = serv;
-        _server = server;
+        _host = host;
     }
     public void run() {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
@@ -26,23 +31,18 @@ public class Listener implements Runnable{
             }
             switch(command) {
                 case "count":
-                    String ans = "";
-                    if (_server.get_numOfConn() == _server.get_maxNumOfConn()) ans = " (max)";
-                    System.out.println(_server.get_numOfConn() + ans);
-                    break;
-                case "maxconn":
-                    System.out.println(_server.get_maxNumOfConn());
+                    System.out.println(_host.get_numOfConn());
                     break;
                 case "state":
                     System.out.println(_serverThread.getState());
                     break;
                 case "queue":
-                    System.out.println(_channel.getSizeOfQueue());
+                    System.out.println(_channel.getSize());
                     break;
                 case "help":
                     System.out.println("    'count' - number of connections at the moment" +
                             "\n    'maxconn' - maximum number of connections" +
-                            "\n    'state' - current state of Server" +
+                            "\n    'state' - current state of Host" +
                             "\n    'queue' - current size of the channel queue");
                     break;
                 default:
