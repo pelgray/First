@@ -1,6 +1,6 @@
 package concurrentutils;
 
-import netutils.MessageHandler;
+import netutils.LogMessageErrorWriter;
 
 import java.util.LinkedList;
 
@@ -11,15 +11,15 @@ public class Channel<T> {// здесь очередь незапущенных �
     // сюда из сервера, отсюда - на диспетчер
     // диспетчер занимается запуском потока
 
-    private final int _maxCount; // максимальное количество сессий, которое мы готовы принять на канал
+    private final int _maxObjects; // максимальное количество сессий, которое мы готовы принять на канал
     private final LinkedList<T> _queue = new LinkedList<>();
-    private MessageHandler _msgH;
+    private LogMessageErrorWriter _errorWriter;
 
     private final Object _lock = new Object();
 
-    public Channel(int maxCount, MessageHandler messageHandler) {
-        _msgH = messageHandler;
-        _maxCount = maxCount;
+    public Channel(int maxCount, LogMessageErrorWriter errorWriter) {
+        _errorWriter = errorWriter;
+        _maxObjects = maxCount;
     }
 
     public int getSize() {
@@ -30,11 +30,11 @@ public class Channel<T> {// здесь очередь незапущенных �
 
     public void put(T x){
         synchronized (_lock) {
-            while(_queue.size() == _maxCount) {
+            while(_queue.size() == _maxObjects) {
                 try {
                     _lock.wait();
                 } catch (InterruptedException e) {
-                    _msgH.handleError("The error of waiting in 'put'-condition.");
+                    _errorWriter.write("The error of waiting in 'put'-condition.");
                 }
             }
             _queue.addLast(x);
@@ -47,7 +47,7 @@ public class Channel<T> {// здесь очередь незапущенных �
                 try {
                     _lock.wait();
                 } catch (InterruptedException e) {
-                    _msgH.handleError("The error of waiting in 'take'-condition.");
+                    _errorWriter.write("The error of waiting in 'take'-condition.");
                 }
             }
             _lock.notifyAll();

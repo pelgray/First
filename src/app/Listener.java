@@ -1,7 +1,10 @@
 package app;
 
 import concurrentutils.Channel;
+import concurrentutils.Stoppable;
 import netutils.Host;
+import netutils.LogMessageErrorWriter;
+import sun.rmi.runtime.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,24 +13,28 @@ import java.io.InputStreamReader;
 /**
  * Created by 1 on 08.03.2017.
  */
-public class Listener implements Runnable{
-    private Channel<Runnable> _channel;
+public class Listener implements Stoppable{
+    private Channel<Stoppable> _channel;
     private Host _host;
     private int _maxNumOfConn;
-    public Listener (Channel<Runnable> ch, Host host, int maxNumOfConn){
+    private LogMessageErrorWriter _errorWriter;
+    private boolean _isActive;
+    public Listener (Channel<Stoppable> ch, Host host, int maxNumOfConn, LogMessageErrorWriter errorWriter){
         _channel = ch;
         _host = host;
         _maxNumOfConn = maxNumOfConn;
+        _isActive = true;
+        _errorWriter = errorWriter;
     }
     public void run() {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        while (true){
-            String command = "";
+        while (_isActive){
+            String command;
             try {
                 command = bufferedReader.readLine();
             } catch (IOException e) {
-                System.err.println("app.Listener: The error of reading from the system input stream.");
-                System.exit(-1);
+                _errorWriter.write("The error of reading from the system input stream.");
+                return;
             }
             switch(command) {
                 case "count":
@@ -43,15 +50,44 @@ public class Listener implements Runnable{
                 case "queue":
                     System.out.println(_channel.getSize());
                     break;
+                case "stop":
+                    System.out.println("Are you sure? (y/n)");
+                    try {
+                        command = bufferedReader.readLine();
+                    } catch (IOException e) {
+                        _errorWriter.write("The error of reading from the system input stream.");
+                        return;
+                    }
+                    switch (command) {
+                        case "y":
+                            Server.stop();
+                            break;
+                        case "n":
+                            System.out.println("The server was not stopped.");
+                            break;
+                        default:
+                            System.err.println("Wrong answer! :)\nTry again.");
+                            break;
+                    }
+                    break;
                 case "help":
                     System.out.println("    'count' - number of request at the moment" +
                             "\n    'max' - maximum number of connections" +
-                            "\n    'queue' - current size of the channel queue");
+                            "\n    'queue' - current size of the channel queue" +
+                            "\n    'stop' - stop the server");
                     break;
                 default:
-                    System.err.println("app.Listener:   Wrong command. Please use command 'help' for find out more.");
+                    System.err.println("Wrong command. Please use command 'help' for find out more.");
                     break;
             }
+        }
+    }
+
+    @Override
+    public void stop() {
+        if(_isActive){
+            _isActive = false;
+            System.out.println("\tThe listener was stopped.");
         }
     }
 }

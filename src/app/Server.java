@@ -2,15 +2,21 @@ package app;
 
 import concurrentutils.Channel;
 import concurrentutils.Dispatcher;
+import concurrentutils.Stoppable;
 import concurrentutils.ThreadPool;
-import netutils.Host;
-import netutils.MessageHandler;
-import netutils.MessageHandlerFactory;
+import netutils.*;
+
+import static netutils.MessageErrorType.DETAILED;
+import static netutils.MessageErrorType.STANDARD;
 
 /**
  * Created by 1 on 18.03.2017.
  */
 public class Server {
+
+    public static void stop(){
+        System.exit(0);
+    }
 
     public static void main(String[] args) { // в аргументах: номер порта, количество возможных подключений
 
@@ -31,38 +37,58 @@ public class Server {
         }
         MessageHandler messageHandler = mHF.create();
 
+        LogMessageErrorWriter errorWriter = (new LogMessageErrorFactoryMethod()).getWriter("default", STANDARD);
+        if (errorWriter == null){
+            System.err.println("app.Server: The error of getting the errorWriter. Check the name or type.");
+            return;
+        }
+
         // порт выбираем в интервале  1 025..65 535; 0 - автоматический выбор свободного порта
         int portNum; // номер порта
         try {
             portNum = Integer.parseInt(args[0]); // получение номера порта из аргументов
         } catch (NumberFormatException e) {
-            messageHandler.handleError("Wrong port format. Should be integer. Try again.");
+            errorWriter.write("Wrong port format. Should be integer. Try again.");
             return;
         }
         int maxNumOfConn;
         try {
             maxNumOfConn = Integer.parseInt(args[1]); // получение максимального количества подключений
         } catch (NumberFormatException e) {
-            messageHandler.handleError("Wrong maximum number of connections format. Should be integer. Try again.");
+            errorWriter.write("Wrong maximum number of connections format. Should be integer. Try again.");
             return;
         }
 
-        Channel<Runnable> channel = new Channel<>(maxNumOfConn, messageHandler);
-        Host classHost = new Host(portNum, channel, messageHandler);
-        Thread server = new Thread(classHost);
-        server.setName("HOST");
-        server.start();
+        Channel<Stoppable> channel = new Channel<>(maxNumOfConn, errorWriter);
+        Host classHost = new Host(portNum, channel, messageHandler, errorWriter);
+        Thread host = new Thread(classHost);
+        host.setName("HOST");
+        host.start();
 
-        Thread listener = new Thread(new Listener(channel, classHost, maxNumOfConn));
-        listener.setDaemon(true);
+        Listener classListener = new Listener(channel, classHost, maxNumOfConn, errorWriter);
+        Thread listener = new Thread(classListener);
         listener.setName("LISTENER");
         listener.start();
 
-        ThreadPool threadPool = new ThreadPool(maxNumOfConn, messageHandler);
+        ThreadPool threadPool = new ThreadPool(maxNumOfConn, errorWriter);
 
-        Thread dispatcher = new Thread(new Dispatcher(channel, threadPool));
-        dispatcher.setDaemon(true);
+        Dispatcher classDispatch = new Dispatcher(channel, threadPool);
+        Thread dispatcher = new Thread(classDispatch);
         dispatcher.setName("DISPATCHER");
         dispatcher.start();
+
+        System.out.println("Ready for work.");
+        System.out.println("[INFO]   Please turn off the server properly: use the 'stop' command. Thank you.");
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            System.out.println("Shutting down...");
+            classHost.stop();
+            classDispatch.stop();
+            threadPool.stop();
+            classListener.stop();
+            System.out.println("The Server gonna be stop now. Bye-bye!");
+        }
+
+        ));
     }
 }
+

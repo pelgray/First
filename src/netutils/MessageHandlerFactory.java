@@ -14,10 +14,10 @@ public interface MessageHandlerFactory {
 * MessageHandlerFactory{
 *   MessageHandler  (String type){MsgHandler;
 *   String type = ab;
-*   switch:
+*   switch (type){
 *       case ab: msgHandler = new PrintHandler();
 *       case bc: msgHandler = new AnotherHandler();
-*
+*   }
 *
 *   Factory.create(type);
 *   }

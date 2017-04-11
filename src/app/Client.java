@@ -12,18 +12,16 @@ public class Client {
         try {
             portNum = Integer.parseInt(args[0]); // берем порт из аргументов
         } catch (NumberFormatException e){
-            System.err.println("app.Client: Wrong port format. Should be integer. Try again.");
+            System.err.println("Wrong port format. Should be integer. Try again.");
             return;
         }
 
         // по хосту подключаемся к тому порту, что указывали на сервере
         Socket socket;
         try {
-
             socket = new Socket(args[1], portNum);
         } catch (IOException e) {
-            System.err.println("app.Client: The error of creating a new socket. Please check arguments. PortNum = " + portNum + "; Host = " + args[1]);
-            e.printStackTrace();
+            System.err.println("The error of creating a new socket. Please check arguments. PortNum = " + portNum + "; Host = " + args[1] + ".\nOr server may be is not available.");
             return;
         }
 
@@ -31,14 +29,14 @@ public class Client {
         try {
             dOutputStream = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            System.err.println("app.Client: The error of getting the output stream.");
+            System.err.println("The error of getting the output stream.");
             return;
         }
         DataInputStream dInputStream;
         try {
             dInputStream = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
-            System.err.println("app.Client: The error of getting the input stream.");
+            System.err.println("The error of getting the input stream.");
             return;
         }
 
@@ -49,38 +47,61 @@ public class Client {
         try {
             fromServer = dInputStream.readUTF();
         } catch (IOException e) {
-            System.err.println("app.Client: The error of reading from the input stream. The server maybe is not connected.");
+            System.err.println("The error of reading from the input stream. The server may be is not available.");
             return;
         }
 
-        if (fromServer.equals("")) {
+        if (fromServer.equals("SERVER is active")) {
             System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
-            String myMsg = "";
+            String myMsg;
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-            while (!myMsg.equals("exit")) {
+            while (true) {
                 try {
-                    myMsg = bufferedReader.readLine();
-                } catch (IOException e) {
-                    if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("The Host is not connected.");
-                    } else {
-                        System.err.println("app.Client: The error of reading from the system input stream.");
+                    if (bufferedReader.ready()){
+                        try {
+                            myMsg = bufferedReader.readLine();
+                        } catch (IOException e) {
+                            if (e.getMessage().contains("Connection reset")) {
+                                System.err.println("The Host is not connected.");
+                            } else {
+                                System.err.println("The error of reading from the system input stream.");
+                            }
+                            return;
+                        }
+                        try {
+                            dOutputStream.writeUTF(myMsg);
+                        } catch (IOException e) {
+                            if (e.getMessage().contains("Connection reset")) {
+                                System.err.println("The Host is not connected.");
+                            } else {
+                                System.err.println("The error of writing in the output stream.");
+                            }
+                            return;
+                        }
+                        if (myMsg.equals("exit")) {
+                            System.out.println("The connection was stopped.");
+                            break;
+                        }
+                        System.out.println("Sent");
                     }
-                    return;
+                } catch (IOException e) {
+                    e.printStackTrace(); // bufferedReader.ready()
                 }
                 try {
-                    dOutputStream.writeUTF(myMsg);
-                } catch (IOException e) {
-                    if (e.getMessage().contains("Connection reset")) {
-                        System.err.println("The Host is not connected.");
-                    } else {
-                        System.err.println("app.Client: The error of writing in the output stream.");
+                    if (dInputStream.available() != 0){
+                        try {
+                            fromServer = dInputStream.readUTF();
+                        } catch (IOException e) {
+                            System.err.println("The error of reading from the input stream. The server maybe is not connected.");
+                            return;
+                        }
+                        System.out.println("Server:\t" + fromServer);
+                        break;
                     }
-                    return;
+                } catch (IOException e) {
+                    e.printStackTrace(); // dInputStream.available()
                 }
-                System.out.println("Sent");
             }
-            System.out.println("The connection was stopped.");
         }
         else{ // выводим сообщение от сервера, что он не хочет работать с нами
             System.out.println(fromServer);
