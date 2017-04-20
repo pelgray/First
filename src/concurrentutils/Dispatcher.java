@@ -27,6 +27,7 @@ public class Dispatcher implements Stoppable {
     public void stop() {
         if (_isActive){
             _isActive = false;
+            // остановка тасков из channel
             _thread.interrupt();
             System.out.println("\tThe dispatcher was stopped.");
         }

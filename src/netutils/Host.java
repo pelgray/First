@@ -20,7 +20,7 @@ public class Host implements Stoppable{
     private MessageHandler _msgH;
     private LogMessageErrorWriter _errorWriter;
     private Thread _thread;
-    private boolean _isActive;
+    private volatile boolean _isActive;
 
     private final Object _lock = new Object();
 
