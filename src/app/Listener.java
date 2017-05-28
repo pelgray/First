@@ -53,7 +53,7 @@ public class Listener implements Stoppable{
                 case "stop":
                     System.out.println("Are you sure? (y/n)");
                     try {
-                        command = bufferedReader.readLine();
+                        command = bufferedReader.readLine().toLowerCase();
                     } catch (IOException e) {
                         _errorWriter.write("The error of reading from the system input stream.");
                         return;

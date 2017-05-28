@@ -10,113 +10,9 @@ public class Client {
     private static DataOutputStream _dout;
     private static DataInputStream _din;
     private static BufferedReader _bR;
-    private static File _folder;
-    private static Checksum _hash = new Checksum();
 
-    static void sendFile() throws Exception
-    {
-        String filename;
-        System.out.print("Enter file name: ");
-        filename = _bR.readLine();
-
-        File file = new File(_folder, filename);
-
-        if (!file.exists()){
-            System.out.println("File does not exists...");
-            _dout.writeUTF("File not found");
-            return;
-        }
-
-        _dout.writeUTF(filename); // отправка имени файла
-
-        String msgFromServer = _din.readUTF();
-
-        if(msgFromServer.compareTo("File Already Exists")==0)
-        {
-            msgFromServer = _din.readUTF();
-            String msg = _hash.get(file.getAbsolutePath());
-            String option;
-            System.out.print("File already exists ");
-            if (msg.equals(msgFromServer)) System.out.print("and the same. ");
-            else System.out.print("and is not the same. ");
-            System.out.println("Do you want to OverWrite (Y/N) ?");
-            option = _bR.readLine();
-            if(option.equals("Y"))
-            {
-                _dout.writeUTF("Y");
-            }
-            else
-            {
-                _dout.writeUTF("N");
-                System.out.println("Sending canceled.");
-                return;
-            }
-        }
-
-        System.out.println("Sending file...");
-        FileInputStream fin = new FileInputStream(file);
-        int ch;
-        do{
-            ch = fin.read();
-            _dout.writeUTF(String.valueOf(ch));
-        }
-        while(ch != -1);
-        fin.close();
-        System.out.println(_din.readUTF());
-    }
-
-    static void receiveFile() throws Exception
-    {
-        String fileName;
-        System.out.print("Enter file name: ");
-        fileName = _bR.readLine();
-        _dout.writeUTF(fileName);
-        String msgFromServer = _din.readUTF();
-
-        if(msgFromServer.compareTo("File Not Found")==0)
-        {
-            System.out.println("File was not found on the Server...");
-            return;
-        }
-        else if(msgFromServer.compareTo("READY")==0)
-        {
-            msgFromServer = _din.readUTF();
-            System.out.println("Receiving file...");
-            File file = new File(_folder, fileName);
-            if(file.exists())
-            {
-                String msg = _hash.get(file.getAbsolutePath());
-                String option;
-                System.out.print("File already exists ");
-                if (msg.equals(msgFromServer)) System.out.print("and the same. ");
-                else System.out.print("and is not the same. ");
-                System.out.println("Do you want to OverWrite (Y/N) ?");
-                option = _bR.readLine();
-                _dout.writeUTF(option);
-                if(option.equals("N"))
-                {
-                    _dout.flush();
-                    System.out.println("Receiving canceled.");
-                    return;
-                }
-                file.delete();
-                file.createNewFile();
-            }
-
-            FileOutputStream fout = new FileOutputStream(file);
-            int ch;
-            String temp;
-            do{
-                temp = _din.readUTF();
-                ch = Integer.parseInt(temp);
-                if (ch != -1){
-                    fout.write(ch);
-                }
-            }while(ch != -1);
-            fout.close();
-            System.out.println(_din.readUTF());
-        }
-    }
+    private static ClientFTPmethods _ftp;
+    private static boolean _isAuthorized = false;
 
     public static void main(String[] args) { // в аргументах: сначала номер порта, потом имя хоста
         int portNum; // номер порта
@@ -150,11 +46,6 @@ public class Client {
             return;
         }
 
-        _folder = new File("C:" +
-                File.separator + "TEST_FTP_CLIENT");
-        if (!_folder.exists()) {
-            _folder.mkdir();
-        }
 
         System.out.println("Please wait. Connecting to the Host...");
 
@@ -169,13 +60,14 @@ public class Client {
 
         if (fromServer.equals("SERVER is active")) {
             System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
-
-            System.out.println("[INFO]\tCommands for working with files:\n" +
-                                "\t\t'#get' - when you want to get a file from the Server's folder;\n" +
-                                "\t\t'#send' - when you want to send a file to the Server from your folder.");
+            System.out.println("[INFO]\tIf you wanna work with files, use next commands:\n" +
+                    "\t\t'#reg' - if you are a new user;\n" +
+                    "\t\t'#log' - if you want to log in to system.");
 
             String myMsg;
             _bR = new BufferedReader(new InputStreamReader(System.in));
+            _ftp = new ClientFTPmethods(_dout, _din, _bR);
+
             label:
             while (true) {
                 try {
@@ -201,18 +93,52 @@ public class Client {
                             return;
                         }
                         switch (myMsg) {
-                            case "#get":
-                                try {
-                                    receiveFile();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                            case "#reg":
+                                if (!_isAuthorized) _ftp.registration();
+                                else System.out.println("To start the registration, you need to log out. Use command '#logout'.");
+                                break;
+                            case "#log":
+                                if (!_isAuthorized) {
+                                    _ftp.authorization();
+                                    if (_ftp.isAuthorized()) {
+                                        _isAuthorized = true;
+                                        System.out.println("[INFO]\tCommands for working with VCS:\n" +
+                                                "\t\t'#update' - when you want to update a file on the Server;\n" +
+                                                "\t\t'#rollback' - if you want to rollback of file version;\n" +
+                                                "\t\t'#logout' - if you want to log out.");
+                                    }
+                                }
+                                else System.out.println("To log in with a different name, you need to log out. Use command '#logout'.");
+                                break;
+                            case "#update":
+                                    if (_isAuthorized) {
+                                        _ftp.updateFile();
+                                    }
+                                    else{
+                                        System.out.println("You are not authorized. Use commands:\n" +
+                                                "\t\t'#reg' - if you are a new user;\n" +
+                                                "\t\t'#log' - if you want to log in to system.");
+                                    }
+                                break;
+                            case "#rollback":
+                                if (_isAuthorized) {
+                                    _ftp.rollbackFile();
+                                }
+                                else{
+                                    System.out.println("You are not authorized. Use commands:\n" +
+                                            "\t\t'#reg' - if you are a new user;\n" +
+                                            "\t\t'#log' - if you want to log in to system.");
                                 }
                                 break;
-                            case "#send":
-                                try {
-                                    sendFile();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                            case "#logout":
+                                if (_isAuthorized) {
+                                    _ftp.logOut(socket.getInetAddress().getHostAddress() + ":" + socket.getLocalPort());
+                                    if (!_ftp.isAuthorized()) _isAuthorized = false;
+                                }
+                                else{
+                                    System.out.println("You are not authorized. Use commands:\n" +
+                                            "\t\t'#reg' - if you are a new user;\n" +
+                                            "\t\t'#log' - if you want to log in to system.");
                                 }
                                 break;
                             case "exit":
@@ -242,7 +168,7 @@ public class Client {
                 }
             }
         }
-        else{ // выводим сообщение от сервера, что он не хочет работать с нами
+        else{ // выводим сообщение от сервера
             System.out.println(fromServer);
         }
     }

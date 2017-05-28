@@ -11,10 +11,11 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Checksum {
     private MessageDigest md;
+    private final String ALG = "SHA-1";
 
     public Checksum(){
         try {
-            md = MessageDigest.getInstance("SHA-1");
+            md = MessageDigest.getInstance(ALG);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
