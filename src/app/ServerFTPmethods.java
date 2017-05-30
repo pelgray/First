@@ -355,7 +355,14 @@ public class ServerFTPmethods implements FTPmethods {
                 _dout.writeUTF("end");
                 String t = _din.readUTF();
                 if (t.equals("cancel")) return;
-                int ans = Integer.parseInt(t);
+                int ans;
+                try {
+                    ans = Integer.parseInt(t);
+                }
+                catch(NumberFormatException e){
+                    _dout.writeUTF("wrong");
+                    return;
+                }
                 if (ans < 0 || ans >= i) {
                     _dout.writeUTF("wrong");
                     return;

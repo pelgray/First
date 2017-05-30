@@ -1,6 +1,5 @@
 package netutils;
 
-import app.Checksum;
 import app.ServerFTPmethods;
 import concurrentutils.Stoppable;
 
