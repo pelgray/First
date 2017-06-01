@@ -8,12 +8,10 @@ import java.io.File;
 public interface FTPmethods {
     void baseSend(File file);
     void baseReceive(File file);
-    void sendFile();
-    void receiveFile();
     void registration();
     void authorization();
     void updateFile();
     void rollbackFile();
-    void logOut(String name);
+    void logOut();
     boolean isAuthorized();
 }

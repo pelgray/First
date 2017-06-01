@@ -17,15 +17,15 @@ public class Host implements Stoppable{
     private int _portNum; // номер порта
     private ServerSocket _serverSocket;
     private Channel<Stoppable> _channel;
-    private MessageHandler _msgH;
+    private MessageHandlerFactory _msgHF;
     private LogMessageErrorWriter _errorWriter;
     private Thread _thread;
     private volatile boolean _isActive;
 
     private final Object _lock = new Object();
 
-    public Host(int portNum, Channel<Stoppable> channel, MessageHandler mH, LogMessageErrorWriter errorWriter){
-        _msgH = mH;
+    public Host(int portNum, Channel<Stoppable> channel, MessageHandlerFactory mHF, LogMessageErrorWriter errorWriter){
+        _msgHF = mHF;
         _errorWriter = errorWriter;
         _portNum = portNum;
         try {
@@ -71,7 +71,7 @@ public class Host implements Stoppable{
                 _numOfConn++;
             }
             // отправляем в очередь
-            _channel.put(new Session(socket, Host.this, _msgH, _errorWriter));
+            _channel.put(new Session(socket, Host.this, _msgHF, _errorWriter));
         }
     }
 

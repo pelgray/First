@@ -12,15 +12,17 @@ public class ClientFTPmethods implements FTPmethods {
     private static DataInputStream _din;
     private static BufferedReader _bR;
     private static String _username;
+    private static String _nameHostPort;
     private static File _folder;
     private static Checksum _hash = new Checksum();
     private static File _controlFile;
     private static boolean _isAuthorized = false;
 
-    ClientFTPmethods(DataOutputStream dout, DataInputStream din, BufferedReader bR){
+    ClientFTPmethods(DataOutputStream dout, DataInputStream din, BufferedReader bR, String name){
         _dout = dout;
         _din = din;
         _bR = bR;
+        _nameHostPort = name;
     }
 
     public boolean isAuthorized(){
@@ -67,102 +69,6 @@ public class ClientFTPmethods implements FTPmethods {
                 }
             } while (ch != -1);
             fout.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void sendFile() {
-        try {
-            String filename;
-            System.out.print("Enter file name: ");
-            filename = _bR.readLine();
-
-            File file = new File(_folder, filename);
-
-            if (!file.exists()){
-                System.out.println("File does not exists...");
-                _dout.writeUTF("File not found");
-                return;
-            }
-
-            _dout.writeUTF(filename); // отправка имени файла
-
-            String msgFromServer = _din.readUTF();
-
-            if(msgFromServer.compareTo("File Already Exists")==0)
-            {
-                msgFromServer = _din.readUTF();
-                String msg = _hash.get(file.getAbsolutePath());
-                String option;
-                System.out.print("File already exists ");
-                if (msg.equals(msgFromServer)) System.out.print("and the same. ");
-                else System.out.print("and is not the same. ");
-                System.out.println("Do you want to OverWrite (Y/N) ?");
-                option = _bR.readLine().toUpperCase();
-                if(option.equals("Y"))
-                {
-                    _dout.writeUTF("Y");
-                }
-                else
-                {
-                    _dout.writeUTF("N");
-                    System.out.println("Sending canceled.");
-                    return;
-                }
-            }
-
-            System.out.println("Sending file...");
-            baseSend(file);
-            System.out.println(_din.readUTF());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void receiveFile() {
-        try {
-            String fileName;
-            System.out.print("Enter file name: ");
-            fileName = _bR.readLine();
-            _dout.writeUTF(fileName);
-            String msgFromServer = _din.readUTF();
-
-            if(msgFromServer.compareTo("File Not Found")==0)
-            {
-                System.out.println("File was not found on the Server...");
-                return;
-            }
-            else if(msgFromServer.compareTo("READY")==0) {
-                msgFromServer = _din.readUTF();
-                System.out.println("Receiving file...");
-                File file = new File(_folder, fileName);
-                if (file.exists()) {
-                    String msg = _hash.get(file.getAbsolutePath());
-                    String option;
-                    System.out.print("File already exists ");
-                    if (msg.equals(msgFromServer)) System.out.print("and the same. ");
-                    else System.out.print("and is not the same. ");
-                    System.out.println("Do you want to OverWrite (Y/N) ?");
-                    option = _bR.readLine().toUpperCase();
-                    _dout.writeUTF(option);
-                    if (option.equals("N")) {
-                        _dout.flush();
-                        System.out.println("Receiving canceled.");
-                        return;
-                    }
-                    file.delete();
-                    file.createNewFile();
-                }
-                _dout.writeUTF("Y");
-
-                baseReceive(file);
-                System.out.println(_din.readUTF());
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -338,11 +244,11 @@ public class ClientFTPmethods implements FTPmethods {
     }
 
     @Override // выход из системы пользователя
-    public void logOut(String name) {
+    public void logOut() {
         try {
             System.out.println("Do you really want to log out? (y/n)");
             if(_bR.readLine().equalsIgnoreCase("y")){
-                _dout.writeUTF(name);
+                _dout.writeUTF(_nameHostPort);
                 System.out.println("Bye-bye, " + _username);
                 _isAuthorized = false;
                 _username = null;

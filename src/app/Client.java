@@ -1,5 +1,8 @@
 package app;
 
+import netutils.MessageHandler;
+import netutils.MessageHandlerFactory;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -10,9 +13,6 @@ public class Client {
     private static DataOutputStream _dout;
     private static DataInputStream _din;
     private static BufferedReader _bR;
-
-    private static ClientFTPmethods _ftp;
-    private static boolean _isAuthorized = false;
 
     public static void main(String[] args) { // в аргументах: сначала номер порта, потом имя хоста
         int portNum; // номер порта
@@ -32,6 +32,21 @@ public class Client {
             return;
         }
 
+        Class classMessageHandlerFactory;
+        try {
+            classMessageHandlerFactory = Class.forName(args[2]);
+        } catch (ClassNotFoundException e) {
+            System.err.println("Wrong name of class MessageHandlerFactory. Class not found. Try again.");
+            return;
+        }
+
+        MessageHandlerFactory mHF;
+        try {
+            mHF = (MessageHandlerFactory) classMessageHandlerFactory.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            System.err.println("The error of creating a new instance of class MessageHandlerFactory.");
+            return;
+        }
 
         try {
             _dout = new DataOutputStream(socket.getOutputStream());
@@ -46,6 +61,9 @@ public class Client {
             return;
         }
 
+        _bR = new BufferedReader(new InputStreamReader(System.in));
+
+        MessageHandler _mH = mHF.create("client", new ClientFTPmethods(_dout, _din, _bR, socket.getInetAddress().getHostAddress() + ":" + socket.getLocalPort()));
 
         System.out.println("Please wait. Connecting to the Host...");
 
@@ -60,13 +78,7 @@ public class Client {
 
         if (fromServer.equals("SERVER is active")) {
             System.out.printf("The connection was created. Your name is (%s:%s)%n", socket.getInetAddress().getHostAddress(), socket.getLocalPort());
-            System.out.println("[INFO]\tIf you wanna work with files, use next commands:\n" +
-                    "\t\t'#reg' - if you are a new user;\n" +
-                    "\t\t'#log' - if you want to log in to system.");
-
             String myMsg;
-            _bR = new BufferedReader(new InputStreamReader(System.in));
-            _ftp = new ClientFTPmethods(_dout, _din, _bR);
 
             label:
             while (true) {
@@ -93,59 +105,11 @@ public class Client {
                             return;
                         }
                         switch (myMsg) {
-                            case "#reg":
-                                if (!_isAuthorized) _ftp.registration();
-                                else System.out.println("To start the registration, you need to log out. Use command '#logout'.");
-                                break;
-                            case "#log":
-                                if (!_isAuthorized) {
-                                    _ftp.authorization();
-                                    if (_ftp.isAuthorized()) {
-                                        _isAuthorized = true;
-                                        System.out.println("[INFO]\tCommands for working with VCS:\n" +
-                                                "\t\t'#update' - when you want to update a file on the Server;\n" +
-                                                "\t\t'#rollback' - if you want to rollback of file version;\n" +
-                                                "\t\t'#logout' - if you want to log out.");
-                                    }
-                                }
-                                else System.out.println("To log in with a different name, you need to log out. Use command '#logout'.");
-                                break;
-                            case "#update":
-                                    if (_isAuthorized) {
-                                        _ftp.updateFile();
-                                    }
-                                    else{
-                                        System.out.println("You are not authorized. Use commands:\n" +
-                                                "\t\t'#reg' - if you are a new user;\n" +
-                                                "\t\t'#log' - if you want to log in to system.");
-                                    }
-                                break;
-                            case "#rollback":
-                                if (_isAuthorized) {
-                                    _ftp.rollbackFile();
-                                }
-                                else{
-                                    System.out.println("You are not authorized. Use commands:\n" +
-                                            "\t\t'#reg' - if you are a new user;\n" +
-                                            "\t\t'#log' - if you want to log in to system.");
-                                }
-                                break;
-                            case "#logout":
-                                if (_isAuthorized) {
-                                    _ftp.logOut(socket.getInetAddress().getHostAddress() + ":" + socket.getLocalPort());
-                                    if (!_ftp.isAuthorized()) _isAuthorized = false;
-                                }
-                                else{
-                                    System.out.println("You are not authorized. Use commands:\n" +
-                                            "\t\t'#reg' - if you are a new user;\n" +
-                                            "\t\t'#log' - if you want to log in to system.");
-                                }
-                                break;
                             case "exit":
                                 System.out.println("The connection was stopped.");
                                 break label;
                             default:
-                                System.out.println("Sent");
+                                _mH.handle(myMsg);
                                 break;
                         }
                     }

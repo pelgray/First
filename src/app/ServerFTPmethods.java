@@ -1,10 +1,8 @@
 package app;
 
 import netutils.FTPmethods;
-import netutils.LogMessageErrorWriter;
 
 import java.io.*;
-import java.net.SocketException;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -13,7 +11,6 @@ import java.util.Date;
  */
 public class ServerFTPmethods implements FTPmethods {
     private String _name; // имя, сложенное из хоста и порта, либо username
-    private LogMessageErrorWriter _errorWriter;
 
     private DataOutputStream _dout;
     private DataInputStream _din;
@@ -23,11 +20,10 @@ public class ServerFTPmethods implements FTPmethods {
     private Checksum _hash = new Checksum();
     private boolean _isAuthorized = false;
 
-    public ServerFTPmethods(DataInputStream din, DataOutputStream dout, String name, LogMessageErrorWriter errorWriter){
+    public ServerFTPmethods(DataInputStream din, DataOutputStream dout, String name){
         _din = din;
         _dout = dout;
         _name = name;
-        _errorWriter = errorWriter;
 
         _folder = new File("c:" +
                 File.separator + "TEST_FTP_SERVER");
@@ -108,135 +104,6 @@ public class ServerFTPmethods implements FTPmethods {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public void sendFile() {
-        String filename;
-        try {
-            filename = _din.readUTF();
-        } catch (SocketException e) {
-            if (e.getMessage().equals("Socket closed"))
-                return;
-            else if (e.getMessage().equals("Connection reset"))
-                System.err.println("The connection was reset by Client (" + _name + "). Bye friend!");
-            else e.printStackTrace();
-            return;
-        } catch (IOException e) {
-            if (!e.getMessage().equals("Connection reset"))
-                _errorWriter.write("The error of reading from the input stream.");
-            else
-                System.err.println("The connection was reset by Client (" + _name + "). Bye friend!");
-            return;
-        }
-        System.out.println("The client (" + _name + ") requested the file " + filename + ".");
-        File file = new File(_folder, filename);
-        if (!file.exists()) {
-            try {
-                _dout.writeUTF("File Not Found");
-            } catch (IOException e) {
-                System.err.println("The connection with waiting Client (" + _name + ") was lost.");
-                e.printStackTrace();
-                return;
-            }
-
-            System.out.println("\tThe file " + filename + " not found.");
-            return;
-        } else { // если существует
-            try {
-                _dout.writeUTF("READY");
-                String temp = _hash.get(file.getAbsolutePath());
-                _dout.writeUTF(temp); // отправка хэша
-            } catch (IOException e) {
-                System.err.println("The connection with waiting Client (" + _name + ") was lost.");
-                e.printStackTrace();
-                return;
-            }
-            String option;
-            try {
-                option = _din.readUTF();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-            if (option.equals("N")) return;
-
-            baseSend(file);
-
-            try {
-                _dout.writeUTF("File was received successfully.");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            System.out.println("The file " + filename + " was successfully sent to the client (" + _name + ").");
-        }
-    }
-
-    @Override
-    public void receiveFile() {
-            String filename = null;
-            try {
-                filename = _din.readUTF();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            // проверяет, есть ли что принимать
-            if(filename.compareTo("File not found")==0)
-            {
-                System.out.println("The client (" + _name + ") tried to send the file " + filename + ", but it does not exist.");
-                return;
-            }
-
-            File file = new File(_folder, filename);
-            String option;
-
-            if (file.exists()){
-                try {
-                    _dout.writeUTF("File Already Exists");
-                    String temp = _hash.get(file.getAbsolutePath());
-                    _dout.writeUTF(temp); // отправка хэша
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    option = _din.readUTF();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return;
-                }
-                if (option.equals("Y"))
-                    System.out.println("The client (" + _name + ") sent a new version of file " + filename + ".");
-            }
-            else
-            {
-                try {
-                    _dout.writeUTF("SendFile");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                option = "Y";
-                System.out.println("The client (" + _name + ") sent a new file " + filename + ".");
-            }
-
-            if  (option.compareTo("Y") == 0){
-                file.delete();
-                try {
-                    file.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                baseReceive(file);
-                try {
-                    _dout.writeUTF("File was sent successfully.");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            else
-            {
-                return;
-            }
     }
 
     @Override // регистрация нового пользователя
@@ -383,7 +250,7 @@ public class ServerFTPmethods implements FTPmethods {
     }
 
     @Override // выход из системы пользователя
-    public void logOut(String name) {
+    public void logOut() {
         try {
             String temp = _din.readUTF();
             if (!temp.equals("cancel")) {

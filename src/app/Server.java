@@ -35,7 +35,6 @@ public class Server {
             System.err.println("app.Server: The error of creating a new instance of class MessageHandlerFactory.");
             return;
         }
-        MessageHandler messageHandler = mHF.create();
 
         LogMessageErrorWriter errorWriter = (new LogMessageErrorFactoryMethod()).getWriter("default", STANDARD);
         if (errorWriter == null){
@@ -60,7 +59,7 @@ public class Server {
         }
 
         Channel<Stoppable> channel = new Channel<>(maxNumOfConn, errorWriter);
-        Host classHost = new Host(portNum, channel, messageHandler, errorWriter);
+        Host classHost = new Host(portNum, channel, mHF, errorWriter);
         Thread host = new Thread(classHost);
         host.setName("HOST");
         host.start();

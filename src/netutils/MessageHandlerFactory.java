@@ -4,7 +4,7 @@ package netutils;
  * Created by 1 on 06.04.2017.
  */
 public interface MessageHandlerFactory {
-    MessageHandler create();
+    MessageHandler create(String parent, FTPmethods ftp);
 }
 
 /*

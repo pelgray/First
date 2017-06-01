@@ -20,14 +20,10 @@ public class Session implements Stoppable {
     private DataOutputStream _dout;
     private DataInputStream _din;
 
-    private ServerFTPmethods _ftp;
-    private boolean _isAuthorized = false;
-
-    public Session(Socket socket, Host host, MessageHandler msgH, LogMessageErrorWriter errorWriter) {
+    public Session(Socket socket, Host host, MessageHandlerFactory msgHF, LogMessageErrorWriter errorWriter) {
         this._host = host;
         this._socket = socket;
         this._name = socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
-        this._msgH = msgH;
         this._errorWriter = errorWriter;
 
         try {
@@ -42,8 +38,7 @@ public class Session implements Stoppable {
             _errorWriter.write("The error of getting the input stream.");
             return;
         }
-
-        _ftp = new ServerFTPmethods(_din, _dout, _name, _errorWriter);
+        this._msgH = msgHF.create("server", new ServerFTPmethods(_din, _dout, _name));
     }
 
 
@@ -78,35 +73,7 @@ public class Session implements Stoppable {
                         System.err.println("The connection was reset by Client (" + _name + "). Bye friend!");
                     return;
                 }
-                switch (clientMsg) {
-                    case "#update":
-                        if(_isAuthorized)
-                            _ftp.updateFile();
-                        continue;
-                    case "#rollback":
-                        if(_isAuthorized)
-                            _ftp.rollbackFile();
-                        continue;
-                    case "#reg":
-                        _ftp.registration();
-                        continue;
-                    case "#log":
-                        _ftp.authorization();
-                        if (_ftp.isAuthorized()) {
-                            _name = _ftp.get_name();
-                            _isAuthorized = true;
-                        }
-                        continue;
-                    case "#logout":
-                        if(_isAuthorized) {
-                            _ftp.logOut(null);
-                            if (!_ftp.isAuthorized()) {
-                                _name = _ftp.get_name();
-                                _isAuthorized = false;
-                            }
-                        }
-                        continue;
-                }
+
                 if (!clientMsg.equals("exit")) _msgH.handle(_name, clientMsg);
             }
             System.out.println("The connection with (" + _name + ") was stopped.");
@@ -120,6 +87,10 @@ public class Session implements Stoppable {
                 _errorWriter.write("The error of closing socket.");
             }
         }
+    }
+
+    public void set_name(String name){
+        _name = name;
     }
 
     @Override
